@@ -1,0 +1,371 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  name            String?
+  role            UserRole @default(MEMBER)
+  status          UserStatus @default(PENDING)
+  profilePhoto    String?   @map("profileImage")
+  bio             String?
+  phone           String?
+  gender          String?
+  dateOfBirth     DateTime?
+  country         String?
+  city            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  research        Research[]
+  projects        Project[]
+  contactSubmissions ContactSubmission[]
+  registration    UserRegistration?
+  notifications   Notification[]
+}
+
+enum UserRole {
+  MEMBER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+// User Registration Details
+model UserRegistration {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  motivation            String
+  fieldCategory         String
+  hasExperience         Boolean
+  experienceDescription String?
+  teamworkFeelings      String
+  futureGoals           String
+  skills                String
+  otherSkills           String?
+  hobbies               String
+  availabilityDays      Int
+  availabilityHours     Int
+  linkedin              String?
+  github                String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Admin Notifications
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  userId      String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  user        User? @relation(fields: [userId], references: [id])
+}
+
+enum NotificationType {
+  NEW_REGISTRATION
+  USER_APPROVED
+  USER_REJECTED
+  USER_SUSPENDED
+}
+
+// Homepage Settings
+model HomepageSettings {
+  id               String   @id @default(cuid())
+  heroTitle        String
+  heroSubtitle     String
+  heroCtaText      String
+  heroCtaLink      String
+  bannerImage      String?
+  bannerVideo      String?
+  seoTitle         String?
+  seoDescription   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// About Section
+model About {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Research Management
+model Research {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  content       String?
+  excerpt       String?   // Brief summary for cards
+  featured      Boolean  @default(false)
+  published     Boolean  @default(false)
+  categoryId    String?
+  authorId      String?
+  tags          String?   // Comma-separated tags
+  readTime      Int?     // Estimated reading time in minutes
+  difficulty    String?   // Beginner, Intermediate, Advanced
+  language      String?   // Language of the content
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  category      Category? @relation(fields: [categoryId], references: [id])
+  author        User? @relation(fields: [authorId], references: [id])
+  images        ResearchImage[]
+  metadata      ResearchMetadata?
+}
+
+// Research Images
+model ResearchImage {
+  id          String   @id @default(cuid())
+  researchId  String
+  imageUrl    String
+  altText     String?
+  caption     String?
+  displayOrder Int     @default(0)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  research    Research @relation(fields: [researchId], references: [id], onDelete: Cascade)
+}
+
+// Research Metadata (for additional details)
+model ResearchMetadata {
+  id              String   @id @default(cuid())
+  researchId      String   @unique
+  methodology     String?  // Research methodology
+  findings        String?  // Key findings
+  implications    String?  // Implications of research
+  references      String?  // References or citations
+  doi             String?  // Digital Object Identifier
+  journal         String?  // Journal name
+  volume          String?  // Journal volume
+  issue           String?  // Journal issue
+  pages           String?  // Page numbers
+  publisher       String?  // Publisher name
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  research        Research @relation(fields: [researchId], references: [id], onDelete: Cascade)
+}
+
+// Project Management
+model Project {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  content       String?
+  excerpt       String?   // Brief summary for cards
+  featured      Boolean  @default(false)
+  published     Boolean  @default(false)
+  categoryId    String?
+  authorId      String?
+  tags          String?   // Comma-separated tags
+  status        String?   // Planning, Development, Testing, Completed, Maintained
+  startDate     DateTime? // Project start date
+  endDate       DateTime? // Project end date
+  githubUrl     String?  // GitHub repository URL
+  demoUrl       String?  // Live demo URL
+  technologies  String?  // Comma-separated technologies used
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  category      Category? @relation(fields: [categoryId], references: [id])
+  author        User? @relation(fields: [authorId], references: [id])
+  images        ProjectImage[]
+  metadata      ProjectMetadata?
+}
+
+// Project Images
+model ProjectImage {
+  id          String   @id @default(cuid())
+  projectId   String
+  imageUrl    String
+  altText     String?
+  caption     String?
+  displayOrder Int     @default(0)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Project Metadata (for additional details)
+model ProjectMetadata {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  challenges      String?  // Challenges faced
+  solutions       String?  // Solutions implemented
+  features        String?  // Key features
+  architecture    String?  // Architecture overview
+  performance     String?  // Performance metrics
+  scalability     String?  // Scalability considerations
+  testing         String?  // Testing approach
+  deployment      String?  // Deployment information
+  futurePlans     String?  // Future enhancement plans
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Categories
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  type        CategoryType
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  research    Research[]
+  projects    Project[]
+}
+
+enum CategoryType {
+  RESEARCH
+  PROJECT
+}
+
+// Team Members
+model TeamMember {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  teamRole    TeamRole @default(MEMBER)
+  bio         String?
+  image       String?
+  email       String?
+  phone       String?
+  linkedin    String?
+  twitter     String?
+  github      String?
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum TeamRole {
+  FOUNDER
+  ADMIN
+  COORDINATOR
+  MEMBER
+  INTERN
+}
+
+// About Us Timeline
+model TimelineMilestone {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  date        DateTime
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Core Values
+model CoreValue {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String?
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Contact Management
+model ContactSubmission {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  message     String?
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User? @relation(fields: [userId], references: [id])
+}
+
+// Contact Information
+model ContactInfo {
+  id          String   @id @default(cuid())
+  email       String
+  phone       String?
+  address     String?
+  mapEmbed    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// FAQ Management
+model FAQ {
+  id          String   @id @default(cuid())
+  question    String
+  answer      String
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Terms & Conditions
+model Terms {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Social Links
+model SocialLink {
+  id        String   @id @default(cuid())
+  platform  String
+  url       String
+  icon      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
